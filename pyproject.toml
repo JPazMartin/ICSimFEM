@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=60", "setuptools-scm>=8.0"]
+
+[project]
+name         = "ICSimFEM"
+version      = "1.0.0"
+authors      = [{name  = "José Paz-Martín", email = "jose.martin@usc.gal"}]
+description  = "Package for charge transport simulation for ionization chambers using the finite element method"
+readme       = "README.md"
+dependencies = ["numpy>=2.3", "scipy>1.16", "gmsh>=4.13.1"]
+keywords     = ["recombination", "ionization chambers", "finite element method"]
+
+[tool.setuptools.packages]
+find = {} 
+
+[tool.setuptools.package-data]
+myModule = ["data/*.csv"]
+
+[project.urls]
+Homepage = "https://github.com/JPazMartin/ICSimFEM.git"
