@@ -1,0 +1,121 @@
+====================================================================================================
+  ICSimFEM code version 1.0.1                                                  28/11/2025, 06:27:43  
+====================================================================================================
+Python version..........................3.13.9 
+Dolfinx version.........................0.9.0
+GMSH version............................4.13.1
+====================================================================================================
+
+
+*-- Chamber description:
+========================
+
+Chamber name............................PP3D_T31022_1D
+Serial number...........................0000
+Calibration coefficient.................2.326E+09 Gy/C
+Applied voltage.........................+300.00 V
+Voltage applied on......................High voltage electrode
+Mesh file name..........................Mesh generated using CylindricalIC1D class
+High voltage electrode tag..............2
+Collection electrode tag................3
+Guard ring electrode tag................None
+Number of elements......................400
+Symmetry of the geometry................Cylindrical
+
+
+*-- Physics:
+============
+
+Physics name............................air3SpeciesGotzFull_(eRecom + mult)
+Temperature.............................20.00 °C
+Pressure................................1013.25 hPa
+Relative humidity.......................50.00 %
+Relative permittivity...................1.000589
+Electric field perturbation.............On
+Electric field full coupled.............None
+
+List of species to be simulated:
+
+  -> Positive ions:
+     Charge.............................1
+     Mobility definition................Constant mobility and standard scaling rules
+     Longitudinal diffusion.............Nerst-Towsend relationship for diffusion
+     Fraction of ionization in gas......1
+
+  -> Negative ions:
+     Charge.............................-1
+     Mobility definition................Constant mobility and standard scaling rules
+     Longitudinal diffusion.............Nerst-Towsend relationship for diffusion
+     Fraction of ionization in gas......0
+
+  -> Electrons:
+     Charge.............................-1
+     Mobility definition................Variable mobility and standard scaling rules
+                - File................../home/jose/Estudos/Doutoramento/Codes/FEniCS/ICSimFEM/ICSimF
+                                        EM/data/AirElectronVelocityMagboltzSTP.csv
+     Longitudinal diffusion.............Variable diffusion with electric field
+     Fraction of ionization in gas......1
+
+List of process included:
+
+ 1.- Positive ions + Negative ions ->  Neutral [1.4000E-12 m^3/s]
+ 2.- Positive ions + Electrons ->  Neutral [4.4500E-12 m^3/s]
+ 3.- Electrons -> Negative ions [Function of electric field]
+ 4.- Electrons -> 2*Electrons + Positive ions [Function of electric field]
+
+
+*-- Beam parameters:
+====================
+
+Beam type...............................Pulsed source
+Pulse duration..........................1.900E-06 s
+Dose per pulse..........................8.286E-04 Gy
+
+
+*-- Time stepper:
+=================
+
+Method..................................BDF2
+Error...................................0.01
+
+
+*-- Solver
+==========
+
+Bubble enriched space...................True
+Transport equations space degree........1
+Electric Field space degree.............2
+Solver..................................preonly
+Preconditioner..........................lu
+
+
+
+
+*-- Simulation:
+===============
+
+1.- Calculation of the weighted potential:
+    Elapsed time: 0.29 s
+2.- Calculation of the potential:
+    Elapsed time: 0.29 s
+3.- Assembling the system of physical equations
+4.- Charge transport simulation starts:
+
+Charge transport ends
+
+
+
+*-- Results:
+============
+1.- Induced signal:
+   Q (Positive ions) = 2.5892E-13 C
+   Q (Negative ions) = 2.2662E-14 C
+   Q (Electrons) = 7.4443E-14 C
+2.- Charge collection efficiency:
+   CCE = 0.999372
+
+
+Total elapsed time in simulation: 8.52 s
+====================================================================================================
+  End of simulation                                                            28/11/2025, 06:27:54  
+====================================================================================================
