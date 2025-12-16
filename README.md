@@ -4,7 +4,7 @@ Code to simulate the response of ionization chambers using the finite element me
 Further updates to include new features are expected. The code will be ported to dolfinx version 0.10.0
 
 ## Install the code
-To run the code, first install dolfinx (version 0.9.0). Refer to github.com/FEniCS/dolfinx.git
+To run the code, first install dolfinx (version 0.9.0). Refer to [DOLFINx](https://github.com/FEniCS/dolfinx.git) 
 
 Then, install the code by downloading the module:
 ```
