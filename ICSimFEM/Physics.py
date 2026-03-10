@@ -117,7 +117,7 @@ class Physics:
 
     @property
     def efieldFullCoupling(self):
-        self.__efieldFullCoupling
+        return self.__efieldFullCoupling
 
     @efieldFullCoupling.setter
     def efieldFullCoupling(self, value: bool):
