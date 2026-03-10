@@ -32,9 +32,9 @@ class Plotter1D:
         fig, ax = plt.subplots(1, 2, figsize = (12, 6))
 
         solution = self.reader.getNextStep()
-        i = 0
+        i = 0; j = 0
         while solution != False:
-
+            
             if i % self.each == 0:
 
                 fig.suptitle(fr"Time in simulation = {solution[0] * 1E6:.2f} $\upmu$s")
@@ -55,7 +55,12 @@ class Plotter1D:
                 fig.tight_layout(rect = [0, 0, 1, 1.05])
                 plt.pause(1E-3)
 
+                fig.savefig(f"solution/step_{j}.png", dpi = 250)
+
+                j += 1
+
             solution = self.reader.getNextStep()
+
             i += 1
 
         self.reader.close()
