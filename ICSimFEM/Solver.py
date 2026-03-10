@@ -550,6 +550,15 @@ class Solver:
                 else:
                     self.saver.writeField(self.inPotential, self.inEField)
 
+            if self.saveData and not self.beam.pulsed:
+
+                self.saver.writeSpecies(self.u, 0)
+
+                if self.physics.eFieldPerturbation:
+                    self.saver.writeField(self.uE, self.physics.electricField)
+                else:
+                    self.saver.writeField(self.inPotential, self.inEField)
+
             if (n % self.reportEach == 0) and (self.beam.pulsed):
                 
                 tEnd = time.time()
