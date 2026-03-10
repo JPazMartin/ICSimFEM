@@ -10,4 +10,4 @@ from .TimeStepper import TimeStepper
 from .utils       import constants, ktp
 
 
-__version__ = "1.0.1"
+__version__ = "1.1.0"
