@@ -8,7 +8,7 @@ import basix
 import numpy as np
 import mpi4py
 
-from .utils            import jitOptions, deleteCache
+from .utils            import jitOptions, deleteCache, constants
 from dolfinx.nls.petsc import NewtonSolver
 from ICSimFEM          import Logger
 
@@ -103,6 +103,12 @@ class Chamber:
 
         # This condition is here to simulate recombination by backdiffusion.
         self.boundaryConditionsEverywhere = False
+
+        # If no calibration coefficient is provided, then estimate it from the
+        # volume of the chamber
+        if self.Ndw == 0:
+            norm     = (constants.electronCharge * constants.airDensity * self.volume)
+            self.Ndw = constants.averageEnergyPerIonPair / norm # Gy/C
 
     @property
     def Ndw(self):
@@ -419,7 +425,7 @@ class Chamber:
         
         solver  = NewtonSolver(mpi4py.MPI.COMM_WORLD, problem)
         solver.convergence_criterion = "incremental"
-        solver.rtol   = 1e-2
+        solver.rtol   = 1E-5
         solver.atol   = 1E-5
 
         solver.solve(u)
