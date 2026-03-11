@@ -36,6 +36,11 @@ class Constants:
     @property
     def referencePressure(self) -> float:
         return 1013.25 # hPa
+        
+    @property
+    def airDensity(self) -> float:
+        """Air density at 20 degC and 1013.25 hPa"""
+        return 1.204 # kg/m^3
 
 constants = Constants()
 
