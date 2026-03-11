@@ -59,6 +59,10 @@ class Physics:
         self._species        = []
         self._speciesName    = []
         self._functions      = []
+
+        # Ignore that the fraction of ionization must sum 2.000. Only 
+        # for debugging purposes.
+        self.ignoreIonSum    = False
         
         return
     
@@ -122,6 +126,14 @@ class Physics:
     @efieldFullCoupling.setter
     def efieldFullCoupling(self, value: bool):
         self.__efieldFullCoupling = value
+
+    @property
+    def ignoreIonSum(self):
+        return self.__ignoreIonSum
+
+    @ignoreIonSum.setter
+    def ignoreIonSum(self, value: bool):
+        self.__ignoreIonSum = value
 
     def generateFunctions(self, V1: dolfinx.fem.functionspace,
                            V2: dolfinx.fem.functionspace) -> None:
@@ -455,7 +467,7 @@ class Physics:
         Parameters
         ----------
         V: dolfinx.fem.functionspace
-            Scalarunction space of the problem
+            Scalar function space of the problem
         beam: Beam
             Beam for the simulation
         uE: dolfinx.fem.function
@@ -493,10 +505,11 @@ class Physics:
 
         # List of induced currents
         iInduced = []
-        
+
         # Chech that ionization equals 2.
         f_ionsum = round(np.sum([specie.fIonization for specie in self._species]), 3)
-        assert f_ionsum == 2.000, "Error: Ionization fraction do not sum 2."
+        assert f_ionsum == 2.000 or self.ignoreIonSum, "Error: Ionization "
+        "fraction do not sum 2."
         
         # Iterate over the species, produce the variational formulations and the 
         # expressions to calculate the induced current.
