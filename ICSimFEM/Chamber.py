@@ -11,7 +11,7 @@ import mpi4py
 from .utils            import jitOptions, deleteCache, constants
 from dolfinx.nls.petsc import NewtonSolver
 from ICSimFEM          import Logger
-
+from dolfinx.fem.petsc import NonlinearProblem
 
 class Chamber:
     
@@ -306,7 +306,7 @@ class Chamber:
 
         facets = self._meshData[2].find(boundaryTag)
         dolfC  = dolfinx.fem.Constant(self._meshData[0], value)
-        self._meshData[0].topology.create_connectivity(self.dim - 1, self.dim)
+        self._meshData.mesh.topology.create_connectivity(self.dim - 1, self.dim)
         dofs   = dolfinx.fem.locate_dofs_topological(V, self.dim - 1, facets)
         
         return dolfinx.fem.dirichletbc(dolfC, dofs, V)
@@ -407,8 +407,7 @@ class Chamber:
         P1 = basix.ufl.element("Lagrange", self._meshData[0].topology.cell_name(),
                                 polDegree)
         
-        V  = dolfinx.fem.functionspace(self._meshData[0], P1,
-                                        jit_options = jitOptions())
+        V  = dolfinx.fem.functionspace(self._meshData[0], P1)
 
         # Solution and test function for the problem.
         u = dolfinx.fem.function.Function(V)
@@ -420,21 +419,27 @@ class Chamber:
         # Poisson equation:
         a = ufl.inner(ufl.grad(u), ufl.grad(v)) * self.getScalingFactor() * ufl.dx
 
-        problem = dolfinx.fem.petsc.NonlinearProblem(a, u, bcs = bc,
-                                                     jit_options = jitOptions())
-        
-        solver  = NewtonSolver(mpi4py.MPI.COMM_WORLD, problem)
-        solver.convergence_criterion = "incremental"
-        solver.rtol   = 1E-5
-        solver.atol   = 1E-5
+        petsc_options = {
+            "snes_type": "newtonls",
+            "snes_linesearch_type": "bt",
+            "snes_atol": 1e-5,
+            "snes_rtol": 1e-5,
+            "ksp_type": "preonly",
+            "pc_type": "lu",
+            "pc_factor_mat_solver_type": "petsc",
+            "snes_max_it": 1000
+        }
 
-        solver.solve(u)
+        problem = NonlinearProblem(a, u, bcs = bc, petsc_options_prefix = "Ef_", 
+                                   petsc_options = petsc_options, 
+                                   jit_options = jitOptions())
+        u       = problem.solve()
 
         # Compute electric field
         U_grad = - ufl.grad(u)
-        W      = dolfinx.fem.functionspace(self._meshData[0], ("CG", 1, (3, )),
-                                            jit_options = jitOptions())
-        expr   = dolfinx.fem.Expression(U_grad, W.element.interpolation_points())
+        W      = dolfinx.fem.functionspace(self._meshData.mesh, ("CG", 1, (3, )))
+        expr   = dolfinx.fem.Expression(U_grad, W.element.interpolation_points,
+                                         jit_options = jitOptions())
         fun    = dolfinx.fem.Function(W)
         fun.interpolate(expr)
 

@@ -103,7 +103,7 @@ class CylindricalIC1D(Chamber):
     
         self._meshData = self._generateMesh()
 
-        topology       = self._meshData[0].topology
+        topology       = self._meshData.mesh.topology
         self._dim      = topology.dim
         self._cellName = topology.cell_name()
         self._numCells = topology.index_map(self._dim).size_local 
@@ -147,7 +147,7 @@ class CylindricalIC1D(Chamber):
         gmsh.model.addPhysicalGroup(0, [2], 2)  # High voltage electrode.
         gmsh.model.addPhysicalGroup(0, [1], 3)  # Collection.
 
-        mesh, cell_tags, facet_tags = dolfinx.io.gmshio.model_to_mesh(gmsh.model,
+        meshData = dolfinx.io.gmsh.model_to_mesh(gmsh.model,
                                          mpi4py.MPI.COMM_WORLD, 0, gdim = 3)
         
         # Include the collection and high voltage electrode tags
@@ -160,4 +160,4 @@ class CylindricalIC1D(Chamber):
         # End gmsh
         gmsh.finalize()
 
-        return [mesh, cell_tags, facet_tags]
+        return meshData

@@ -41,10 +41,8 @@ class Saver:
         self.P1 = basix.ufl.element("CG", self.mesh.topology.cell_name(), 1)
         self.el = basix.ufl.mixed_element([self.P1] * self.nSpecies)
 
-        self.V  = dolfinx.fem.functionspace(self.mesh, self.el, 
-                                            jit_options = jitOptions())
-        self.V2 = dolfinx.fem.functionspace(self.mesh, ("CG", 1, (3, )), 
-                                            jit_options = jitOptions())
+        self.V  = dolfinx.fem.functionspace(self.mesh, self.el)
+        self.V2 = dolfinx.fem.functionspace(self.mesh, ("CG", 1, (3, )))
 
         self.u  = dolfinx.fem.function.Function(self.V)
         self.u2 = dolfinx.fem.function.Function(self.V2)
