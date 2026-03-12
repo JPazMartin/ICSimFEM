@@ -13,6 +13,10 @@ from ICSimFEM         import Beam
 from ICSimFEM         import Logger
 from typing           import Callable
 
+# Ignore the warning when divide by zero is encounter (for example in the 
+# electric field when the director angle is pi/2)
+np.seterr(divide = 'ignore')
+
 class Physics:
     
     """
