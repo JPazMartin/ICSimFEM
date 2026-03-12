@@ -52,24 +52,22 @@ fig, ax = plt.subplots(3, 3, figsize = (13, 8),
 # --> Parallel-plate geometry
 ax[0, 0].set_title("Parallel-plate geometry")
 
-x      = E_pp._V.mesh.geometry.x[:, 1]                        # m
-EppSim = E_pp.x.array.reshape(nSteps + 1, 3)[:, 1] / 1E6      # kV/mm
+x      = E_pp._V.mesh.geometry.x[:, 1]                   # m
+EppSim = E_pp.x.array.reshape(nSteps + 1, 3)[:, 1] / 1E6 # kV/mm
 
 ax[0, 0].plot(x * 1E3, EppTh(x),  "-b", linewidth = 1.5, label = "Analytical")
 ax[0, 0].plot(x * 1E3,   EppSim, "--k", linewidth = 2.5, label = "Simulation")
 ax[0, 0].plot(0, 0)
 
-VppSim = V_pp.x.array              # V
+VppSim = V_pp.x.array # V
 ax[1, 0].plot(x * 1E3, VppTh(x),  "-r", linewidth = 1.5, label = "Analytical")
 ax[1, 0].plot(x * 1E3,   VppSim, "--k", linewidth = 2.5)
 
 residualsE = (EppTh(x) - EppSim) / EppTh(x) * 100
 ax[2, 0].plot(x * 1E3, residualsE, "-b")
 
-residualsV = (VppTh(x) - VppSim) / VppTh(x) * 100
-ax[2, 0].plot(x * 1E3, residualsV, "-r")
-
-print(residualsV)
+residualsV = (VppTh(x[1:]) - VppSim[1:]) / VppTh(x[1:]) * 100
+ax[2, 0].plot(x[1:] * 1E3, residualsV, "-r")
 
 # --> Cylindrical geometry
 ax[0, 1].set_title("Cylindrical geometry")
@@ -86,14 +84,14 @@ ax[0, 1].plot(0, 0)
 residualsE = (EcicTh(r) - EcicSim) / EcicTh(r) * 100
 ax[2, 1].plot(r * 1E3, residualsE, "-b")
 
-r       = V_cic._V.mesh.geometry.x[:, 0]                         # m
-VcicSim = V_cic.x.array                                          # V
+r       = V_cic._V.mesh.geometry.x[:, 0] # m
+VcicSim = V_cic.x.array                  # V
 
 ax[1, 1].plot(r * 1E3,  VcicTh(r),  "-r", linewidth = 1.5)
 ax[1, 1].plot(r * 1E3,    VcicSim, "--k", linewidth = 2.5)
 
-residualsV = (VcicTh(r) - VcicSim) / VcicTh(r) * 100
-ax[2, 1].plot(r * 1E3, residualsV, "-r")
+residualsV = (VcicTh(r[1:]) - VcicSim[1:]) / VcicTh(r[1:]) * 100
+ax[2, 1].plot(r[1:] * 1E3, residualsV, "-r")
 
 # --> Spherical geometry
 ax[0, 2].set_title("Spherical geometry")
@@ -116,8 +114,8 @@ VsicSim = V_sic.x.array                                            # V
 ax[1, 2].plot(r * 1E3,  VsicTh(r),  "-r", linewidth = 1.5)
 ax[1, 2].plot(r * 1E3,    VsicSim, "--k", linewidth = 2.5)
 
-residualsV = (VsicTh(r) - VsicSim) / VsicTh(r) * 100
-ax[2, 2].plot(r * 1E3, residualsV, "-r")
+residualsV = (VsicTh(r[1:]) - VsicSim[1:]) / VsicTh(r[1:]) * 100
+ax[2, 2].plot(r[1:] * 1E3, residualsV, "-r")
 
 ax[0, 0].set_ylabel("Electric field (kV/mm)")
 ax[1, 0].set_ylabel("Voltage (V)")
