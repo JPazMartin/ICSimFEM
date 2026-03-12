@@ -10,14 +10,15 @@ import mpi4py
 import time
 import numpy as np
 
-from .Chamber        import Chamber
-from .Physics        import Physics
-from .Beam           import Beam
-from .TimeStepper    import TimeStepper
-from .Saver          import Saver
-from .Logger         import Logger
-from ICSimFEM.utils  import jitOptions, constants, deleteCache
-from scipy.integrate import trapezoid
+from .Chamber          import Chamber
+from .Physics          import Physics
+from .Beam             import Beam
+from .TimeStepper      import TimeStepper
+from .Saver            import Saver
+from .Logger           import Logger
+from ICSimFEM.utils    import jitOptions, constants, deleteCache
+from scipy.integrate   import trapezoid
+from dolfinx.fem.petsc import NonlinearProblem
 
 class Solver:
 
@@ -142,19 +143,19 @@ class Solver:
         elements = basix.ufl.mixed_element([Pn] * nElements)
 
         # Function space
-        self.V   = dolfinx.fem.functionspace(self.chamber._meshData[0],
-                                 elements, jit_options = jitOptions())
-        self.V1  = dolfinx.fem.functionspace(self.chamber._meshData[0],
-                                 ("CG", 1), jit_options = jitOptions())
-        self.V2  = dolfinx.fem.functionspace(self.chamber._meshData[0],
-                                 ("CG", 1, (3, )), jit_options = jitOptions())
+        self.V   = dolfinx.fem.functionspace(self.chamber._meshData.mesh,
+                                 elements)
+        self.V1  = dolfinx.fem.functionspace(self.chamber._meshData.mesh,
+                                 ("CG", 1))
+        self.V2  = dolfinx.fem.functionspace(self.chamber._meshData.mesh,
+                                 ("CG", 1, (3, )))
         
         # Generate the spaces for the (perturbed) electric field
         if self.physics.eFieldPerturbation and not self.physics.efieldFullCoupling:
             PE = basix.ufl.element("Lagrange", self.chamber.cellName, 
                                    self.electricFieldPDegree)
-            self.V_Efield = dolfinx.fem.functionspace(self.chamber._meshData[0],
-                                         PE, jit_options = jitOptions())
+            self.V_Efield = dolfinx.fem.functionspace(self.chamber.mesh,
+                                         PE)
             self.uE = dolfinx.fem.function.Function(self.V_Efield)
             self.v_E = ufl.TestFunction(self.V_Efield)
 
@@ -223,7 +224,7 @@ class Solver:
 
         U_grad     = - ufl.grad(potential)
         self.exprE = dolfinx.fem.Expression(U_grad, 
-            self.V2.element.interpolation_points(), jit_options = jitOptions())
+            self.V2.element.interpolation_points, jit_options = jitOptions())
 
     def _getNewtonSolver(self, equation: ufl.form.Form, u: dolfinx.fem.Function,
                           bcs: list):
@@ -243,23 +244,23 @@ class Solver:
             List of the boundary conditions to be applied.        
         """
 
-        problem = dolfinx.fem.petsc.NonlinearProblem(
-                        equation, u, bcs = bcs, jit_options = jitOptions())
-        solver  = dolfinx.nls.petsc.NewtonSolver(
-                        mpi4py.MPI.COMM_WORLD, problem)
-        solver.convergence_criterion   = "incremental"
-        solver.max_it                  = 100
-        solver.rtol                    = 1E-5
-        solver.atol                    = 1E-10
-
-        # Solver options
-        ksp = solver.krylov_solver
-        ksp.setType(self.solver)
-        ksp.getPC().setType(self.preconditioner)
-        ksp.getPC().setFactorSolverType("mumps")
-        ksp.setFromOptions()
-
-        return solver, ksp
+        # TODO: Evaluate in cluster if pc_factor_mat_solver_type = petscactually
+        # works
+        petsc_options = {
+            "snes_atol": 1e-5,
+            "snes_rtol": 1e-10,
+            "ksp_type" : self.solver,
+            "pc_type"  : self.preconditioner,
+            "pc_factor_mat_solver_type": "petsc",
+            "snes_max_it": 1000
+        }
+    
+        problem = NonlinearProblem(equation, u, bcs = bcs,
+                                   petsc_options_prefix = "Ct_",
+                                   petsc_options = petsc_options, 
+                                   jit_options   = jitOptions())
+        
+        return problem
 
     def _initializeValues(self):
 
@@ -305,15 +306,14 @@ class Solver:
 
         # Get the newton solve for the charge transport problem and electric
         # field perturbation if full copupled.
-        self.solverObject, self.kspObject = self._getNewtonSolver(self.a,
-                                                                   self.u, bc)
+        self.solverObject = self._getNewtonSolver(self.a, self.u, bc)
 
         # If electric field perturbation is on and not full coupled, then 
         # get the solver for the electric field perturbation.
         if (self.physics.eFieldPerturbation and not
                                         self.physics.efieldFullCoupling):
-            self.solverEObject, self.kspEObject = (
-                self._getNewtonSolver(self.a_E, self.uE, bcEField))
+            self.solverEObject  = self._getNewtonSolver(self.a_E, self.uE,
+                                                         bcEField)
 
     def _doAStep(self) -> list[int, bool, bool]:
 
@@ -330,7 +330,9 @@ class Solver:
             or because it is a continous simulation with only 1 step)
         """
 
-        it, conv = self.solverObject.solve(self.u)
+        self.u = self.solverObject.solve()
+        it     = self.solverObject.solver.getIterationNumber()
+        conv   = self.solverObject.solver.getConvergedReason() > 0
 
         # Remove non-physical (negative) solutions for the charge densities.
         for i in range(self.physics._nSpecies):
@@ -533,7 +535,7 @@ class Solver:
             n += 1
             # Performs a step
             it, conv, end_sim = self._doAStep()
-
+            
             if len(self.tArray) > 0 and self.beam.pulsed:
                 f.write("\n")
                 f.write(f"{self.tArray[-1]:.6E}")
