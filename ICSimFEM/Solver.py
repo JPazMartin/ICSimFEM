@@ -143,18 +143,18 @@ class Solver:
         elements = basix.ufl.mixed_element([Pn] * nElements)
 
         # Function space
-        self.V   = dolfinx.fem.functionspace(self.chamber._meshData.mesh,
+        self.V   = dolfinx.fem.functionspace(self.chamber._meshData[0],
                                  elements)
-        self.V1  = dolfinx.fem.functionspace(self.chamber._meshData.mesh,
+        self.V1  = dolfinx.fem.functionspace(self.chamber._meshData[0],
                                  ("CG", 1))
-        self.V2  = dolfinx.fem.functionspace(self.chamber._meshData.mesh,
+        self.V2  = dolfinx.fem.functionspace(self.chamber._meshData[0],
                                  ("CG", 1, (3, )))
         
         # Generate the spaces for the (perturbed) electric field
         if self.physics.eFieldPerturbation and not self.physics.efieldFullCoupling:
             PE = basix.ufl.element("Lagrange", self.chamber.cellName, 
                                    self.electricFieldPDegree)
-            self.V_Efield = dolfinx.fem.functionspace(self.chamber.mesh,
+            self.V_Efield = dolfinx.fem.functionspace(self.chamber._meshData[0],
                                          PE)
             self.uE = dolfinx.fem.function.Function(self.V_Efield)
             self.v_E = ufl.TestFunction(self.V_Efield)
@@ -246,12 +246,19 @@ class Solver:
 
         # TODO: Evaluate in cluster if pc_factor_mat_solver_type = petscactually
         # works
+
+        # For 1D problems, petsc is faster than mumps while for 2D mumps is much
+        # faster than petsc. The performance was not evaluated in a cluster yet.
+        pcFactorMat = "mumps"
+        if self.chamber.dim == "1D": pcFactorMat = "petsc"
+
+
         petsc_options = {
             "snes_atol": 1e-5,
             "snes_rtol": 1e-10,
             "ksp_type" : self.solver,
             "pc_type"  : self.preconditioner,
-            "pc_factor_mat_solver_type": "petsc",
+            "pc_factor_mat_solver_type": pcFactorMat,
             "snes_max_it": 1000
         }
     
@@ -349,7 +356,7 @@ class Solver:
             uSum = np.sum([dolfinx.fem.assemble_scalar(u) for u in self.uSum])
             self.cLeft = uSum / (
                 2 * self.beam.releaseCharge * self.chamber._realVolume)
-
+            
             # The simulation ends when the (simulation) elapsed time is larger
             # than the pulse duration and the number of carriers left is below
             # 0.01 %.
@@ -363,7 +370,7 @@ class Solver:
             if (self.physics.eFieldPerturbation and not 
                                         self.physics.efieldFullCoupling):
                 
-                it, conv = self.solverEObject.solve(self.uE)
+                self.uE = self.solverEObject.solve()
                 self.physics.updateTransportParameters(self.exprE)
 
             # If simulation is not finished update the time step.
@@ -382,7 +389,9 @@ class Solver:
 
                 while True:
                     self.physics.updateTransportParameters(self.exprE)
-                    it, conv    = self.solverObject.solve(self.u)
+                    self.u      = self.solverObject.solve()
+                    it          = self.solverObject.solver.getIterationNumber()
+                    conv        = self.solverObject.solver.getConvergedReason() > 0
                     I           = [dolfinx.fem.assemble_scalar(I) for 
                                    I in self.inducedI]
                     maxDiff     = np.max((np.array(self.IArray) / np.array(I)
