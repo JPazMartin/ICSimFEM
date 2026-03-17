@@ -133,7 +133,7 @@ class Reader:
                                            shape = (self.dimension,))
         self.domain   = ufl.Mesh(self.element)
         self.mesh     = dolfinx.mesh.create_mesh(MPI.COMM_WORLD, self.cells,
-                                                  self.x, self.domain)
+                                                  self.domain, self.x)
         self.idx      = self.mesh.geometry.input_global_indices
         
         # Generate spaces to load data
