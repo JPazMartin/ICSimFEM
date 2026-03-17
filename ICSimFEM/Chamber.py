@@ -306,7 +306,7 @@ class Chamber:
 
         facets = self._meshData[2].find(boundaryTag)
         dolfC  = dolfinx.fem.Constant(self._meshData[0], value)
-        self._meshData.mesh.topology.create_connectivity(self.dim - 1, self.dim)
+        self._meshData[0].topology.create_connectivity(self.dim - 1, self.dim)
         dofs   = dolfinx.fem.locate_dofs_topological(V, self.dim - 1, facets)
         
         return dolfinx.fem.dirichletbc(dolfC, dofs, V)
@@ -420,14 +420,14 @@ class Chamber:
         a = ufl.inner(ufl.grad(u), ufl.grad(v)) * self.getScalingFactor() * ufl.dx
 
         petsc_options = {
-            "snes_type": "newtonls",
-            "snes_linesearch_type": "bt",
-            "snes_atol": 1e-5,
-            "snes_rtol": 1e-5,
-            "ksp_type": "preonly",
-            "pc_type": "lu",
+            "snes_type"                : "newtonls",
+            "snes_linesearch_type"     : "bt",
+            "snes_atol"                : 1E-5,
+            "snes_rtol"                : 1E-5,
+            "ksp_type"                 : "preonly",
+            "pc_type"                  : "lu",
             "pc_factor_mat_solver_type": "petsc",
-            "snes_max_it": 1000
+            "snes_max_it"              : 1000
         }
 
         problem = NonlinearProblem(a, u, bcs = bc, petsc_options_prefix = "Ef_", 
@@ -437,7 +437,7 @@ class Chamber:
 
         # Compute electric field
         U_grad = - ufl.grad(u)
-        W      = dolfinx.fem.functionspace(self._meshData.mesh, ("CG", 1, (3, )))
+        W      = dolfinx.fem.functionspace(self._meshData[0], ("CG", 1, (3, )))
         expr   = dolfinx.fem.Expression(U_grad, W.element.interpolation_points,
                                          jit_options = jitOptions())
         fun    = dolfinx.fem.Function(W)
@@ -449,13 +449,11 @@ class Chamber:
         # Save the calculated values if requested
         if save != "":
             
-            W13 = dolfinx.fem.functionspace(self._meshData[0], ("CG", 1, (3, )),
-                                            jit_options = jitOptions())
+            W13 = dolfinx.fem.functionspace(self._meshData.mesh, ("CG", 1, (3, )))
             fun13    = dolfinx.fem.Function(W13)
             fun13.interpolate(fun)
 
-            W11 = dolfinx.fem.functionspace(self._meshData[0], ("CG", 1, ),
-                                            jit_options = jitOptions())
+            W11 = dolfinx.fem.functionspace(self._meshData.mesh, ("CG", 1, ))
             fun11    = dolfinx.fem.Function(W11)
             fun11.interpolate(u)
 
