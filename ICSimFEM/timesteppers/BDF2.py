@@ -103,7 +103,7 @@ class BDF2(TimeStepper):
         super().updateTimeStep()
         if self.nSteps > 3:
             LTE = self._computeError()            
-            self.dt.value = self.dt.value * LTE**0.2
+            self.dt.value = self.dt.value * min(LTE**0.2, 1.50)
 
         self._constrainPulseDuration()
 
