@@ -74,7 +74,7 @@ class TimeStepper:
         
         minTime = 1.0E-13
         if beam.pulsed and beam.pulseDuration > 0:
-            minTime = min(beam.pulseDuration / self._nStepsDuringPulse, minTime)
+            minTime = min(beam.pulseDuration / 1E5, minTime)
 
         self.t  = dolfinx.fem.Constant(chamber._meshData.mesh, 0.0)
         self.dt = dolfinx.fem.Constant(chamber._meshData.mesh, minTime)
